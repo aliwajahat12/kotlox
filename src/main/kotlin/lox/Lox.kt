@@ -1,4 +1,5 @@
-import lox.AstPrinter
+import lox.RuntimeError
+import lox.interpreter.Interpreter
 import lox.parser.Parser
 import lox.scanner.Scanner
 import lox.scanner.Token
@@ -12,7 +13,11 @@ import kotlin.system.exitProcess
 
 
 var hadError = false
+var hadRuntimeError = false
+val interpreter: Interpreter = Interpreter()
 fun main(args: Array<String>) {
+
+
 
     when (args.size) {
         0 -> runREPL()
@@ -47,6 +52,7 @@ fun runFile(filePath: String) {
     if (hadError) {
         exitProcess(65)
     }
+    if (hadRuntimeError) exitProcess(70)
 }
 
 fun run(source: String) {
@@ -60,11 +66,22 @@ fun run(source: String) {
 
     if (hadError) return
 
-    println(AstPrinter().print(expression!!))
+    interpreter.interpret(expression!!)
+//    println(AstPrinter().print(expression!!))
 }
 
 fun error(line: Int, message: String) {
     report(line, "", message)
+}
+
+fun runtimeError(error: RuntimeError) {
+    System.err.println(
+        """
+            ${error.message}
+            [line ${error.token.line}]
+            """.trimIndent()
+    )
+    hadRuntimeError = true
 }
 
 fun report(line: Int, where: String, message: String) {
