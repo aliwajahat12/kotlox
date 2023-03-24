@@ -1,20 +1,30 @@
 package lox.interpreter
+import lox.Expression
+import lox.Print
 import lox.RuntimeError
+import lox.Stmt
 import lox.parser.*
 import lox.scanner.Token
 import lox.scanner.TokenType.*
 import runtimeError
+import lox.Visitor as StmtVisitor
+import lox.parser.Visitor as ExprVisitor
 
 
-class Interpreter : Visitor<Any?> {
+class Interpreter : ExprVisitor<Any?>, StmtVisitor<Any?> {
 
-    fun interpret(expression: Expr) {
+    fun interpret(statements: List<Stmt>) {
         try {
-            val value = evaluate(expression)
-            println(stringify(value))
+            for (statement in statements) {
+                execute(statement)
+            }
         } catch (error: RuntimeError) {
             runtimeError(error)
         }
+    }
+
+    private fun execute(stmt: Stmt) {
+        stmt.accept(this)
     }
 
     override fun visitBinaryExpr(expr: Binary): Any? {
@@ -141,5 +151,14 @@ class Interpreter : Visitor<Any?> {
     ) {
         if (left is Double && right is Double) return
         throw RuntimeError(operator, "Operands must be numbers.")
+    }
+
+    override fun visitExpressionStmt(stmt: Expression) {
+        evaluate(stmt.expression)
+    }
+
+    override fun visitPrintStmt(stmt: Print) {
+        val value = evaluate(stmt.expression)
+        println(stringify(value))
     }
 }

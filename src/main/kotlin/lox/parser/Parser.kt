@@ -1,5 +1,5 @@
 package lox.parser
-
+import lox.*
 import lox.scanner.Token
 import lox.scanner.TokenType
 import lox.scanner.TokenType.*
@@ -12,12 +12,28 @@ class Parser(val tokens: List<Token>) {
 
     private var current = 0
 
-    fun parse(): Expr? {
-        return try {
-            expression()
-        } catch (error: ParseError) {
-            null
+    fun parse(): List<Stmt> {
+        val statements: MutableList<Stmt> = ArrayList()
+        while (!isAtEnd()) {
+            statements.add(statement())
         }
+        return statements
+    }
+
+    private fun statement(): Stmt {
+        return if (match(PRINT)) printStatement() else expressionStatement()
+    }
+
+    private fun printStatement(): Stmt {
+        val value = expression()
+        consume(SEMICOLON, "Expect ';' after value.")
+        return Print(value)
+    }
+
+    private fun expressionStatement(): Stmt {
+        val expr = expression()
+        consume(SEMICOLON, "Expect ';' after expression.")
+        return Expression(expr)
     }
     private fun expression(): Expr = equality()
 

@@ -1,5 +1,3 @@
-package lox
-
 import lox.parser.*
 import lox.scanner.Token
 import lox.scanner.TokenType

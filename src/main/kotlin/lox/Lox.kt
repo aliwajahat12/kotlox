@@ -62,11 +62,11 @@ fun run(source: String) {
     val tokens = scanner.tokens
 
     val parser = Parser(tokens)
-    val expression = parser.parse()
+    val statements = parser.parse()
 
     if (hadError) return
 
-    interpreter.interpret(expression!!)
+    interpreter.interpret(statements)
 //    println(AstPrinter().print(expression!!))
 }
 
