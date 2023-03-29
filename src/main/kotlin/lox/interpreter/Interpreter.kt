@@ -1,17 +1,13 @@
-package lox.interpreter
-import lox.Expression
-import lox.Print
-import lox.RuntimeError
-import lox.Stmt
+import lox.*
 import lox.parser.*
 import lox.scanner.Token
 import lox.scanner.TokenType.*
-import runtimeError
 import lox.Visitor as StmtVisitor
 import lox.parser.Visitor as ExprVisitor
 
 
 class Interpreter : ExprVisitor<Any?>, StmtVisitor<Any?> {
+    private val environment = Environment()
 
     fun interpret(statements: List<Stmt>) {
         try {
@@ -114,6 +110,10 @@ class Interpreter : ExprVisitor<Any?>, StmtVisitor<Any?> {
         return null
     }
 
+    override fun visitVariableExpr(expr: Variable): Any? {
+        return environment[expr.name];
+    }
+
     private fun evaluate(expr: Expr): Any? {
         return expr.accept(this)
     }
@@ -160,5 +160,15 @@ class Interpreter : ExprVisitor<Any?>, StmtVisitor<Any?> {
     override fun visitPrintStmt(stmt: Print) {
         val value = evaluate(stmt.expression)
         println(stringify(value))
+    }
+
+    override fun visitVarStmt(stmt: Var): Any? {
+        var value: Any? = null
+        if (stmt.initializer != null) {
+            value = evaluate(stmt.initializer)
+        }
+
+        environment.define(stmt.name.lexeme, value)
+        return null
     }
 }

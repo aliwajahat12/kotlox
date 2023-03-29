@@ -1,5 +1,4 @@
 import lox.RuntimeError
-import lox.interpreter.Interpreter
 import lox.parser.Parser
 import lox.scanner.Scanner
 import lox.scanner.Token
