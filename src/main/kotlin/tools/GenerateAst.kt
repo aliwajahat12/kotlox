@@ -15,19 +15,20 @@ object GenerateAst {
         }
         val outputDir = args[0]
         defineAst(
-            outputDir, "lox.parser.Expr", listOf(
-                "lox.parser.Binary   : lox.parser.Expr left, Token operator, lox.parser.Expr right",
-                "lox.parser.Grouping : lox.parser.Expr expression",
-                "lox.parser.Literal  : Any? value",
-                "lox.parser.Unary    : Token operator, lox.parser.Expr right",
-                "lox.parser.Variable : Token name"
+            outputDir, "Expr", listOf(
+                "Assign   : Token name, Expr value",
+                "Binary   : Expr left, Token operator, Expr right",
+                "Grouping : Expr expression",
+                "Literal  : Any? value",
+                "Unary    : Token operator, Expr right",
+                "Variable : Token name"
 
             )
         )
         defineAst(outputDir, "Stmt", listOf(
-            "Expression : lox.parser.Expr expression",
-            "Print      : lox.parser.Expr expression",
-            "Var        : Token name, lox.parser.Expr initializer"
+            "Expression : Expr expression",
+            "Print      : Expr expression",
+            "Var        : Token name, Expr initializer"
         ))
     }
 
@@ -44,7 +45,7 @@ object GenerateAst {
         writer.println("abstract class $baseName {")
         // The base accept() method.
         writer.println()
-        writer.println("\tabstract fun <R> accept(visitor : lox.parser.Visitor<R>  ) : R")
+        writer.println("\tabstract fun <R> accept(visitor : Visitor<R>  ) : R")
 
         writer.println("}")
         writer.println()
@@ -73,14 +74,14 @@ object GenerateAst {
         initializer = initializer.dropLast(1)
 
         writer.println("class $className($initializer) : $baseName() {")
-        writer.println("\toverride fun <R> accept(visitor: lox.parser.Visitor<R>) = visitor.visit$className$baseName(this)")
+        writer.println("\toverride fun <R> accept(visitor: Visitor<R>) = visitor.visit$className$baseName(this)")
         writer.println("}")
 
         writer.println()
     }
 
     private fun defineVisitor(writer: PrintWriter, baseName: String, types: List<String>) {
-        writer.println("interface lox.parser.Visitor<R> {")
+        writer.println("interface Visitor<R> {")
 
         for (type in types) {
             val typeName = type.split(":")[0].trim()

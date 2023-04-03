@@ -111,7 +111,7 @@ class Interpreter : ExprVisitor<Any?>, StmtVisitor<Any?> {
     }
 
     override fun visitVariableExpr(expr: Variable): Any? {
-        return environment[expr.name];
+        return environment[expr.name]
     }
 
     private fun evaluate(expr: Expr): Any? {
@@ -170,5 +170,11 @@ class Interpreter : ExprVisitor<Any?>, StmtVisitor<Any?> {
 
         environment.define(stmt.name.lexeme, value)
         return null
+    }
+
+    override fun visitAssignExpr(expr: Assign): Any? {
+        val value = evaluate(expr.value)
+        environment.assign(expr.name, value)
+        return value
     }
 }

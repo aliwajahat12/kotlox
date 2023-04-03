@@ -5,6 +5,7 @@ import lox.scanner.TokenType
 
 class AstPrinter : Visitor<String> {
     fun print(expr: Expr): String = expr.accept(this)
+    override fun visitAssignExpr(expr: Assign): String = parenthesize(expr.name.lexeme, expr.value)
 
     override fun visitBinaryExpr(expr: Binary): String = parenthesize(expr.operator.lexeme, expr.left, expr.right)
 
@@ -28,7 +29,7 @@ class AstPrinter : Visitor<String> {
 }
 
 
-fun main(args: Array<String>) {
+fun main() {
     val expression: Expr = Binary(
         Unary(
             Token(TokenType.MINUS, "-", null, 1),
