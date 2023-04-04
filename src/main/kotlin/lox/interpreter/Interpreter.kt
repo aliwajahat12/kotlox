@@ -7,7 +7,7 @@ import lox.parser.Visitor as ExprVisitor
 
 
 class Interpreter : ExprVisitor<Any?>, StmtVisitor<Any?> {
-    private val environment = Environment()
+    private var environment = Environment()
 
     fun interpret(statements: List<Stmt>) {
         try {
@@ -21,6 +21,26 @@ class Interpreter : ExprVisitor<Any?>, StmtVisitor<Any?> {
 
     private fun execute(stmt: Stmt) {
         stmt.accept(this)
+    }
+
+    override fun visitBlockStmt(stmt: Block): Void? {
+        executeBlock(stmt.statements, Environment(environment))
+        return null
+    }
+
+    private fun executeBlock(
+        statements: List<Stmt?>,
+        environment: Environment
+    ) {
+        val previous = this.environment
+        try {
+            this.environment = environment
+            for (statement in statements) {
+                execute(statement!!)
+            }
+        } finally {
+            this.environment = previous
+        }
     }
 
     override fun visitBinaryExpr(expr: Binary): Any? {
@@ -152,6 +172,8 @@ class Interpreter : ExprVisitor<Any?>, StmtVisitor<Any?> {
         if (left is Double && right is Double) return
         throw RuntimeError(operator, "Operands must be numbers.")
     }
+
+
 
     override fun visitExpressionStmt(stmt: Expression) {
         evaluate(stmt.expression)

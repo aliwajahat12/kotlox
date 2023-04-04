@@ -1,16 +1,13 @@
 package lox.parser
 
-import lox.Expression
-import lox.Print
-import lox.Stmt
-import lox.Var
+import lox.*
 import lox.scanner.Token
 import lox.scanner.TokenType
 import lox.scanner.TokenType.*
 import error as loxError
 
 
-class Parser(val tokens: List<Token>) {
+class Parser(private val tokens: List<Token>) {
 
     private class ParseError : RuntimeException()
 
@@ -34,7 +31,9 @@ class Parser(val tokens: List<Token>) {
     }
 
     private fun statement(): Stmt {
-        return if (match(PRINT)) printStatement() else expressionStatement()
+        if (match(PRINT)) return printStatement()
+        if (match(LEFT_BRACE)) return Block(block())
+        return expressionStatement()
     }
 
     private fun printStatement(): Stmt {
@@ -59,20 +58,30 @@ class Parser(val tokens: List<Token>) {
         return Expression(expr)
     }
 
+    private fun block(): List<Stmt?> {
+        val statements: MutableList<Stmt?> = ArrayList()
+        while (!check(RIGHT_BRACE) && !isAtEnd()) {
+            statements.add(declaration())
+        }
+        consume(RIGHT_BRACE, "Expect '}' after block.")
+        return statements
+    }
+
+    private fun expression(): Expr = assignment()
+
     private fun assignment(): Expr {
         val expr = equality()
         if (match(EQUAL)) {
             val equals = previous()
             val value = assignment()
             if (expr is Variable) {
-                val name: Token = (expr).name
+                val name = expr.name
                 return Assign(name, value)
             }
             error(equals, "Invalid assignment target.")
         }
         return expr
     }
-    private fun expression(): Expr = assignment()
 
 
     private fun equality(): Expr {
@@ -86,7 +95,7 @@ class Parser(val tokens: List<Token>) {
     }
 
     private fun comparison(): Expr {
-        var expr= term()
+        var expr = term()
         while (match(GREATER, GREATER_EQUAL, LESS, LESS_EQUAL)) {
             val operator = previous()
             val right = term()
@@ -151,6 +160,7 @@ class Parser(val tokens: List<Token>) {
         loxError(token, message)
         return ParseError()
     }
+
     private fun synchronize() {
         advance()
         while (!isAtEnd()) {
