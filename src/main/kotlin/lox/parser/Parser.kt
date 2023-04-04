@@ -1,25 +1,88 @@
 package lox.parser
 
+import lox.*
 import lox.scanner.Token
 import lox.scanner.TokenType
 import lox.scanner.TokenType.*
 import error as loxError
 
 
-class Parser(val tokens: List<Token>) {
+class Parser(private val tokens: List<Token>) {
 
     private class ParseError : RuntimeException()
 
     private var current = 0
 
-    fun parse(): Expr? {
+    fun parse(): List<Stmt> {
+        val statements: MutableList<Stmt> = ArrayList()
+        while (!isAtEnd()) {
+            declaration()?.let { statements.add(it) }
+        }
+        return statements
+    }
+
+    private fun declaration(): Stmt? {
         return try {
-            expression()
+            if (match(VAR)) varDeclaration() else statement()
         } catch (error: ParseError) {
+            synchronize()
             null
         }
     }
-    private fun expression(): Expr = equality()
+
+    private fun statement(): Stmt {
+        if (match(PRINT)) return printStatement()
+        if (match(LEFT_BRACE)) return Block(block())
+        return expressionStatement()
+    }
+
+    private fun printStatement(): Stmt {
+        val value = expression()
+        consume(SEMICOLON, "Expect ';' after value.")
+        return Print(value)
+    }
+
+    private fun varDeclaration(): Stmt {
+        val name = consume(IDENTIFIER, "Expect variable name.")
+        var initializer: Expr? = null
+        if (match(EQUAL)) {
+            initializer = expression()
+        }
+        consume(SEMICOLON, "Expect ';' after variable declaration.")
+        return Var(name, initializer)
+    }
+
+    private fun expressionStatement(): Stmt {
+        val expr = expression()
+        consume(SEMICOLON, "Expect ';' after expression.")
+        return Expression(expr)
+    }
+
+    private fun block(): List<Stmt?> {
+        val statements: MutableList<Stmt?> = ArrayList()
+        while (!check(RIGHT_BRACE) && !isAtEnd()) {
+            statements.add(declaration())
+        }
+        consume(RIGHT_BRACE, "Expect '}' after block.")
+        return statements
+    }
+
+    private fun expression(): Expr = assignment()
+
+    private fun assignment(): Expr {
+        val expr = equality()
+        if (match(EQUAL)) {
+            val equals = previous()
+            val value = assignment()
+            if (expr is Variable) {
+                val name = expr.name
+                return Assign(name, value)
+            }
+            error(equals, "Invalid assignment target.")
+        }
+        return expr
+    }
+
 
     private fun equality(): Expr {
         var expr = comparison()
@@ -32,7 +95,7 @@ class Parser(val tokens: List<Token>) {
     }
 
     private fun comparison(): Expr {
-        var expr= term()
+        var expr = term()
         while (match(GREATER, GREATER_EQUAL, LESS, LESS_EQUAL)) {
             val operator = previous()
             val right = term()
@@ -77,6 +140,9 @@ class Parser(val tokens: List<Token>) {
         if (match(NUMBER, STRING)) {
             return Literal(previous().literal)
         }
+        if (match(IDENTIFIER)) {
+            return Variable(previous())
+        }
         if (match(LEFT_PAREN)) {
             val expr = expression()
             consume(RIGHT_PAREN, "Expect ')' after expression.")
@@ -94,6 +160,7 @@ class Parser(val tokens: List<Token>) {
         loxError(token, message)
         return ParseError()
     }
+
     private fun synchronize() {
         advance()
         while (!isAtEnd()) {

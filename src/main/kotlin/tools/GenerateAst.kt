@@ -16,12 +16,21 @@ object GenerateAst {
         val outputDir = args[0]
         defineAst(
             outputDir, "Expr", listOf(
+                "Assign   : Token name, Expr value",
                 "Binary   : Expr left, Token operator, Expr right",
                 "Grouping : Expr expression",
                 "Literal  : Any? value",
-                "Unary    : Token operator, Expr right"
+                "Unary    : Token operator, Expr right",
+                "Variable : Token name"
+
             )
         )
+        defineAst(outputDir, "Stmt", listOf(
+            "Block      : List<Stmt> statements",
+            "Expression : Expr expression",
+            "Print      : Expr expression",
+            "Var        : Token name, Expr initializer"
+        ))
     }
 
     @Throws(IOException::class)

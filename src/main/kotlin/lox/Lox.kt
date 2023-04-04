@@ -1,5 +1,4 @@
 import lox.RuntimeError
-import lox.interpreter.Interpreter
 import lox.parser.Parser
 import lox.scanner.Scanner
 import lox.scanner.Token
@@ -62,11 +61,11 @@ fun run(source: String) {
     val tokens = scanner.tokens
 
     val parser = Parser(tokens)
-    val expression = parser.parse()
+    val statements = parser.parse()
 
     if (hadError) return
 
-    interpreter.interpret(expression!!)
+    interpreter.interpret(statements)
 //    println(AstPrinter().print(expression!!))
 }
 
