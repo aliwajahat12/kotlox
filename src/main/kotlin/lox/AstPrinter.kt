@@ -29,7 +29,7 @@ class AstPrinter : Visitor<String> {
 }
 
 
-fun main() {
+fun main(args: Array<String>) {
     val expression: Expr = Binary(
         Unary(
             Token(TokenType.MINUS, "-", null, 1),
