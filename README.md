@@ -38,7 +38,28 @@ overload `Environment` constructor, one with no arguments and one with the enclo
 type of `Stmt`, that is `Block` inside `defineAst` function. We then update the `parse` function to check for `{` and
 then consume all statements inside it until we get a `}` and finally return a new `Block`. We override
 the `visitBlockStmt` function inside Interpreter class where we assign the concerned environment before executing the
-statements inside it and then going back to the original environment.
+statements inside it and then going back to the original environment.  
+We can now run the following code with declarations, assignments and scopes:
+
+        var a = "global a";
+        var b = "global b";
+        var c = "global c";
+        {
+            var a = "outer a";
+            var b = "outer b";
+            {
+                var a = "inner a";
+                print a;
+                print b;
+                print c;
+            }
+            print a;
+            print b;
+            print c;
+        }
+        print a;
+        print b;
+        print c;
 
 
 
