@@ -7,3 +7,9 @@ print "not equal";
 
 print "hi" or 2;
 print nil or "yes";
+
+while (a < 10)
+{
+print a;
+a = a+1;
+}
