@@ -4,6 +4,7 @@ import lox.*
 import lox.scanner.Token
 import lox.scanner.TokenType
 import lox.scanner.TokenType.*
+import java.util.*
 import error as loxError
 
 
@@ -31,11 +32,56 @@ class Parser(private val tokens: List<Token>) {
     }
 
     private fun statement(): Stmt {
+        if (match(FOR)) return forStatement()
         if (match(IF)) return ifStatement()
         if (match(PRINT)) return printStatement()
-        if (match(WHILE)) return whileStatement();
+        if (match(WHILE)) return whileStatement()
         if (match(LEFT_BRACE)) return Block(block())
         return expressionStatement()
+    }
+
+    private fun forStatement(): Stmt {
+        consume(LEFT_PAREN, "Expect '(' after 'for'.")
+        val initializer: Stmt?
+        initializer = if (match(SEMICOLON)) {
+            null
+        } else if (match(VAR)) {
+            varDeclaration()
+        } else {
+            expressionStatement()
+        }
+
+        var condition: Expr? = null
+        if (!check(SEMICOLON)) {
+            condition = expression()
+        }
+        consume(SEMICOLON, "Expect ';' after loop condition.")
+
+        var increment: Expr? = null
+        if (!check(RIGHT_PAREN)) {
+            increment = expression()
+        }
+        consume(RIGHT_PAREN, "Expect ')' after for clauses.")
+
+        var body: Stmt = statement()
+
+        if (increment != null) {
+            body = Block(
+                listOf(
+                    body,
+                    Expression(increment)
+                )
+            )
+        }
+
+        if (condition == null) condition = Literal(true)
+        body = While(condition, body)
+
+        if (initializer != null) {
+            body = Block(listOf(initializer, body))
+        }
+
+        return body
     }
 
     private fun ifStatement(): Stmt {
