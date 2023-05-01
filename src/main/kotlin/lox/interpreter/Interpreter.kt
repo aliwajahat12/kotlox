@@ -174,9 +174,16 @@ class Interpreter : ExprVisitor<Any?>, StmtVisitor<Any?> {
     }
 
 
-
     override fun visitExpressionStmt(stmt: Expression) {
         evaluate(stmt.expression)
+    }
+
+    override fun visitIfStmt(stmt: If) {
+        if (isTruthy(evaluate(stmt.condition))) {
+            execute(stmt.thenBranch)
+        } else if (stmt.elseBranch != null) {
+            execute(stmt.elseBranch)
+        }
     }
 
     override fun visitPrintStmt(stmt: Print) {
