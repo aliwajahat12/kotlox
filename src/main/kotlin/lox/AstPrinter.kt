@@ -12,6 +12,8 @@ class AstPrinter : Visitor<String> {
     override fun visitGroupingExpr(expr: Grouping): String = parenthesize("group", expr.expression)
 
     override fun visitLiteralExpr(expr: Literal): String = if (expr.value == null) "nil" else expr.value.toString()
+    override fun visitLogicalExpr(expr: Logical): String =
+        parenthesize(expr.left.toString(), expr.right)
 
     override fun visitUnaryExpr(expr: Unary): String = parenthesize(expr.operator.lexeme, expr.right)
     override fun visitVariableExpr(expr: Variable): String = expr.name.toString()
@@ -29,7 +31,7 @@ class AstPrinter : Visitor<String> {
 }
 
 
-fun main() {
+fun main(args: Array<String>) {
     val expression: Expr = Binary(
         Unary(
             Token(TokenType.MINUS, "-", null, 1),
