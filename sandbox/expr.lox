@@ -1,6 +1,9 @@
 var a = 5;
-var b = 10;
+var b = 5;
 if (a==b)
 print "equal";
 else
 print "not equal";
+
+print "hi" or 2;
+print nil or "yes";
