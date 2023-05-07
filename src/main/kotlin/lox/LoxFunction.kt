@@ -2,7 +2,7 @@ package lox
 
 import Interpreter
 
-class LoxFunction(private val declaration: Function) : LoxCallable {
+class LoxFunction(private val declaration: Function, private val closure: Environment) : LoxCallable {
 
 
     override fun arity(): Int {
@@ -10,7 +10,7 @@ class LoxFunction(private val declaration: Function) : LoxCallable {
     }
 
     override fun call(interpreter: Interpreter, arguments: MutableList<Any?>): Any? {
-        val environment = Environment(interpreter.globals)
+        val environment = Environment(closure)
         for (i in declaration.params.indices) {
             environment.define(
                 declaration.params[i].lexeme,
@@ -23,7 +23,7 @@ class LoxFunction(private val declaration: Function) : LoxCallable {
         } catch (returnValue: ReturnException) {
             return returnValue.value
         }
-        
+
         return null
     }
 

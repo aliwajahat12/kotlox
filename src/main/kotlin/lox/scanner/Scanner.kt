@@ -2,16 +2,16 @@ package lox.scanner
 
 import error
 
-class Scanner(val source: String) {
+class Scanner(private val source: String) {
 
     // All objects should be immutable and transform only when business rules allow
     // Kotlin pattern: use immutable properties to get values from classes
 
     private val _tokens = mutableListOf<Token>()
     val tokens: List<Token> = _tokens
-    var start = 0
-    var current = 0
-    var line = 1
+    private var start = 0
+    private var current = 0
+    private var line = 1
     private val keywords = mapOf(
         "and" to TokenType.AND,
         "class" to TokenType.CLASS,

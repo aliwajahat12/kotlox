@@ -7,8 +7,8 @@ import lox.Visitor as StmtVisitor
 import lox.parser.Visitor as ExprVisitor
 
 
-class Interpreter() : ExprVisitor<Any?>, StmtVisitor<Any?> {
-    val globals = Environment()
+class Interpreter : ExprVisitor<Any?>, StmtVisitor<Any?> {
+    private val globals = Environment()
     private var environment = globals
 
 
@@ -229,7 +229,7 @@ class Interpreter() : ExprVisitor<Any?>, StmtVisitor<Any?> {
     }
 
     override fun visitFunctionStmt(stmt: Function): Void? {
-        val function = LoxFunction(stmt)
+        val function = LoxFunction(stmt, environment)
         environment.define(stmt.name.lexeme, function)
         return null
     }
