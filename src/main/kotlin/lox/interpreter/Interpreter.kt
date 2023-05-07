@@ -105,6 +105,33 @@ class Interpreter : ExprVisitor<Any?>, StmtVisitor<Any?> {
         return null
     }
 
+    override fun visitCallExpr(expr: Call): Any {
+        val callee = evaluate(expr.callee)
+        val arguments: MutableList<Any?> = ArrayList()
+        for (argument in expr.arguments) {
+            arguments.add(evaluate(argument))
+        }
+
+        if (callee !is LoxCallable) {
+            throw RuntimeError(
+                expr.paren,
+                "Can only call functions and classes."
+            )
+        }
+
+        val function: LoxCallable = callee
+
+        if (arguments.size != function.arity()) {
+            throw RuntimeError(
+                expr.paren, "Expected " +
+                        function.arity() + " arguments but got " +
+                        arguments.size + "."
+            )
+        }
+
+        return function.call(this, arguments)
+    }
+
     override fun visitGroupingExpr(expr: Grouping): Any? {
         return evaluate(expr.expression)
     }
