@@ -1,4 +1,5 @@
 import lox.*
+import lox.Function
 import lox.parser.*
 import lox.scanner.Token
 import lox.scanner.TokenType.*
@@ -7,7 +8,25 @@ import lox.parser.Visitor as ExprVisitor
 
 
 class Interpreter : ExprVisitor<Any?>, StmtVisitor<Any?> {
-    private var environment = Environment()
+    private val globals = Environment()
+    private var environment = globals
+
+
+    init {
+        globals.define("clock", object : LoxCallable {
+            override fun arity(): Int {
+                return 0
+            }
+
+            override fun call(interpreter: Interpreter, arguments: MutableList<Any?>): Any {
+                return System.currentTimeMillis().toDouble() / 1000.0
+            }
+
+            override fun toString(): String {
+                return "<native fn>"
+            }
+        })
+    }
 
     fun interpret(statements: List<Stmt>) {
         try {
@@ -28,9 +47,8 @@ class Interpreter : ExprVisitor<Any?>, StmtVisitor<Any?> {
         return null
     }
 
-    private fun executeBlock(
-        statements: List<Stmt?>,
-        environment: Environment
+    fun executeBlock(
+        statements: List<Stmt?>, environment: Environment
     ) {
         val previous = this.environment
         try {
@@ -90,8 +108,7 @@ class Interpreter : ExprVisitor<Any?>, StmtVisitor<Any?> {
                     return left + right
                 }
                 throw RuntimeError(
-                    expr.operator,
-                    "Operands must be two numbers or two strings."
+                    expr.operator, "Operands must be two numbers or two strings."
                 )
             }
 
@@ -103,6 +120,30 @@ class Interpreter : ExprVisitor<Any?>, StmtVisitor<Any?> {
 
         // Unreachable.
         return null
+    }
+
+    override fun visitCallExpr(expr: Call): Any? {
+        val callee = evaluate(expr.callee)
+        val arguments: MutableList<Any?> = ArrayList()
+        for (argument in expr.arguments) {
+            arguments.add(evaluate(argument))
+        }
+
+        if (callee !is LoxCallable) {
+            throw RuntimeError(
+                expr.paren, "Can only call functions and classes."
+            )
+        }
+
+        val function: LoxCallable = callee
+
+        if (arguments.size != function.arity()) {
+            throw RuntimeError(
+                expr.paren, "Expected " + function.arity() + " arguments but got " + arguments.size + "."
+            )
+        }
+
+        return function.call(this, arguments)
     }
 
     override fun visitGroupingExpr(expr: Grouping): Any? {
@@ -176,8 +217,7 @@ class Interpreter : ExprVisitor<Any?>, StmtVisitor<Any?> {
     }
 
     private fun checkNumberOperands(
-        operator: Token,
-        left: Any?, right: Any?
+        operator: Token, left: Any?, right: Any?
     ) {
         if (left is Double && right is Double) return
         throw RuntimeError(operator, "Operands must be numbers.")
@@ -186,6 +226,12 @@ class Interpreter : ExprVisitor<Any?>, StmtVisitor<Any?> {
 
     override fun visitExpressionStmt(stmt: Expression) {
         evaluate(stmt.expression)
+    }
+
+    override fun visitFunctionStmt(stmt: Function): Void? {
+        val function = LoxFunction(stmt, environment)
+        environment.define(stmt.name.lexeme, function)
+        return null
     }
 
     override fun visitIfStmt(stmt: If) {
@@ -199,6 +245,12 @@ class Interpreter : ExprVisitor<Any?>, StmtVisitor<Any?> {
     override fun visitPrintStmt(stmt: Print) {
         val value = evaluate(stmt.expression)
         println(stringify(value))
+    }
+
+    override fun visitReturnStmt(stmt: Return): Void? {
+        var value: Any? = null
+        if (stmt.value != null) value = evaluate(stmt.value)
+        throw ReturnException(value)
     }
 
     override fun visitVarStmt(stmt: Var): Any? {

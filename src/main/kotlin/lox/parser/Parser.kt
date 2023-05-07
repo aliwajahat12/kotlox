@@ -1,10 +1,10 @@
 package lox.parser
 
 import lox.*
+import lox.Function
 import lox.scanner.Token
 import lox.scanner.TokenType
 import lox.scanner.TokenType.*
-import java.util.*
 import error as loxError
 
 
@@ -24,6 +24,7 @@ class Parser(private val tokens: List<Token>) {
 
     private fun declaration(): Stmt? {
         return try {
+            if (match(FUN)) return function("function")
             if (match(VAR)) varDeclaration() else statement()
         } catch (error: ParseError) {
             synchronize()
@@ -35,6 +36,7 @@ class Parser(private val tokens: List<Token>) {
         if (match(FOR)) return forStatement()
         if (match(IF)) return ifStatement()
         if (match(PRINT)) return printStatement()
+        if (match(RETURN)) return returnStatement()
         if (match(WHILE)) return whileStatement()
         if (match(LEFT_BRACE)) return Block(block())
         return expressionStatement()
@@ -42,8 +44,7 @@ class Parser(private val tokens: List<Token>) {
 
     private fun forStatement(): Stmt {
         consume(LEFT_PAREN, "Expect '(' after 'for'.")
-        val initializer: Stmt?
-        initializer = if (match(SEMICOLON)) {
+        val initializer: Stmt? = if (match(SEMICOLON)) {
             null
         } else if (match(VAR)) {
             varDeclaration()
@@ -102,6 +103,16 @@ class Parser(private val tokens: List<Token>) {
         return Print(value)
     }
 
+    private fun returnStatement(): Stmt {
+        val keyword = previous()
+        var value: Expr? = null
+        if (!check(SEMICOLON)) {
+            value = expression()
+        }
+        consume(SEMICOLON, "Expect ';' after return value.")
+        return Return(keyword, value)
+    }
+
     private fun varDeclaration(): Stmt {
         val name = consume(IDENTIFIER, "Expect variable name.")
         var initializer: Expr? = null
@@ -124,6 +135,28 @@ class Parser(private val tokens: List<Token>) {
         val expr = expression()
         consume(SEMICOLON, "Expect ';' after expression.")
         return Expression(expr)
+    }
+
+    private fun function(kind: String): Function {
+        val name = consume(IDENTIFIER, "Expect $kind name.")
+        consume(LEFT_PAREN, "Expect '(' after $kind name.")
+
+        val parameters: MutableList<Token> = ArrayList()
+
+        if (!check(RIGHT_PAREN)) {
+            do {
+                if (parameters.size >= 255) {
+                    error(peek(), "Can't have more than 255 parameters.")
+                }
+
+                parameters.add(consume(IDENTIFIER, "Expect parameter name."))
+
+            } while (match(COMMA))
+        }
+        consume(RIGHT_PAREN, "Expect ')' after parameters.")
+        consume(LEFT_BRACE, "Expect '{' before $kind body.")
+        val body = block()
+        return Function(name, parameters, body)
     }
 
     private fun block(): List<Stmt?> {
@@ -218,7 +251,36 @@ class Parser(private val tokens: List<Token>) {
             val right = unary()
             return Unary(operator, right)
         }
-        return primary()
+        return call()
+    }
+
+    private fun call(): Expr {
+        var expr: Expr = primary()
+        while (true) {
+            if (match(LEFT_PAREN)) {
+                expr = finishCall(expr)
+            } else {
+                break
+            }
+        }
+        return expr
+    }
+
+    private fun finishCall(callee: Expr): Expr {
+        val arguments: MutableList<Expr> = ArrayList()
+        if (!check(RIGHT_PAREN)) {
+            do {
+                if (arguments.size >= 255) {
+                    error(peek(), "Can't have more than 255 arguments.")
+                }
+                arguments.add(expression())
+            } while (match(COMMA))
+        }
+        val paren = consume(
+            RIGHT_PAREN,
+            "Expect ')' after arguments."
+        )
+        return Call(callee, paren, arguments)
     }
 
     private fun primary(): Expr {
