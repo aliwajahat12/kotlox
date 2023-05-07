@@ -8,6 +8,7 @@ class AstPrinter : Visitor<String> {
     override fun visitAssignExpr(expr: Assign): String = parenthesize(expr.name.lexeme, expr.value)
 
     override fun visitBinaryExpr(expr: Binary): String = parenthesize(expr.operator.lexeme, expr.left, expr.right)
+    override fun visitCallExpr(expr: Call): String = parenthesize(expr.arguments.toString(), expr.callee)
 
     override fun visitGroupingExpr(expr: Grouping): String = parenthesize("group", expr.expression)
 

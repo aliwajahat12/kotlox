@@ -6,8 +6,26 @@ import lox.Visitor as StmtVisitor
 import lox.parser.Visitor as ExprVisitor
 
 
-class Interpreter : ExprVisitor<Any?>, StmtVisitor<Any?> {
-    private var environment = Environment()
+class Interpreter() : ExprVisitor<Any?>, StmtVisitor<Any?> {
+    private val globals = Environment()
+    private var environment = globals
+
+
+    init {
+        globals.define("clock", object : LoxCallable {
+            override fun arity(): Int {
+                return 0
+            }
+
+            override fun call(interpreter: Interpreter, arguments: MutableList<Any?>): Any {
+                return System.currentTimeMillis().toDouble() / 1000.0
+            }
+
+            override fun toString(): String {
+                return "<native fn>"
+            }
+        })
+    }
 
     fun interpret(statements: List<Stmt>) {
         try {
@@ -29,8 +47,7 @@ class Interpreter : ExprVisitor<Any?>, StmtVisitor<Any?> {
     }
 
     private fun executeBlock(
-        statements: List<Stmt?>,
-        environment: Environment
+        statements: List<Stmt?>, environment: Environment
     ) {
         val previous = this.environment
         try {
@@ -90,8 +107,7 @@ class Interpreter : ExprVisitor<Any?>, StmtVisitor<Any?> {
                     return left + right
                 }
                 throw RuntimeError(
-                    expr.operator,
-                    "Operands must be two numbers or two strings."
+                    expr.operator, "Operands must be two numbers or two strings."
                 )
             }
 
@@ -114,8 +130,7 @@ class Interpreter : ExprVisitor<Any?>, StmtVisitor<Any?> {
 
         if (callee !is LoxCallable) {
             throw RuntimeError(
-                expr.paren,
-                "Can only call functions and classes."
+                expr.paren, "Can only call functions and classes."
             )
         }
 
@@ -123,9 +138,7 @@ class Interpreter : ExprVisitor<Any?>, StmtVisitor<Any?> {
 
         if (arguments.size != function.arity()) {
             throw RuntimeError(
-                expr.paren, "Expected " +
-                        function.arity() + " arguments but got " +
-                        arguments.size + "."
+                expr.paren, "Expected " + function.arity() + " arguments but got " + arguments.size + "."
             )
         }
 
@@ -203,8 +216,7 @@ class Interpreter : ExprVisitor<Any?>, StmtVisitor<Any?> {
     }
 
     private fun checkNumberOperands(
-        operator: Token,
-        left: Any?, right: Any?
+        operator: Token, left: Any?, right: Any?
     ) {
         if (left is Double && right is Double) return
         throw RuntimeError(operator, "Operands must be numbers.")
