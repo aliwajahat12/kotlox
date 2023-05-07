@@ -18,7 +18,12 @@ class LoxFunction(private val declaration: Function) : LoxCallable {
             )
         }
 
-        interpreter.executeBlock(declaration.body, environment)
+        try {
+            interpreter.executeBlock(declaration.body, environment)
+        } catch (returnValue: ReturnException) {
+            return returnValue.value
+        }
+        
         return null
     }
 

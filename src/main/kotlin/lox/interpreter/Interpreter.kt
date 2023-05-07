@@ -247,6 +247,12 @@ class Interpreter() : ExprVisitor<Any?>, StmtVisitor<Any?> {
         println(stringify(value))
     }
 
+    override fun visitReturnStmt(stmt: Return): Void? {
+        var value: Any? = null
+        if (stmt.value != null) value = evaluate(stmt.value)
+        throw ReturnException(value)
+    }
+
     override fun visitVarStmt(stmt: Var): Any? {
         var value: Any? = null
         if (stmt.initializer != null) {
