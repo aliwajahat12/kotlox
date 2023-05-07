@@ -1,4 +1,5 @@
 import lox.*
+import lox.Function
 import lox.parser.*
 import lox.scanner.Token
 import lox.scanner.TokenType.*
@@ -7,7 +8,7 @@ import lox.parser.Visitor as ExprVisitor
 
 
 class Interpreter() : ExprVisitor<Any?>, StmtVisitor<Any?> {
-    private val globals = Environment()
+    val globals = Environment()
     private var environment = globals
 
 
@@ -46,7 +47,7 @@ class Interpreter() : ExprVisitor<Any?>, StmtVisitor<Any?> {
         return null
     }
 
-    private fun executeBlock(
+    fun executeBlock(
         statements: List<Stmt?>, environment: Environment
     ) {
         val previous = this.environment
@@ -121,7 +122,7 @@ class Interpreter() : ExprVisitor<Any?>, StmtVisitor<Any?> {
         return null
     }
 
-    override fun visitCallExpr(expr: Call): Any {
+    override fun visitCallExpr(expr: Call): Any? {
         val callee = evaluate(expr.callee)
         val arguments: MutableList<Any?> = ArrayList()
         for (argument in expr.arguments) {
@@ -225,6 +226,12 @@ class Interpreter() : ExprVisitor<Any?>, StmtVisitor<Any?> {
 
     override fun visitExpressionStmt(stmt: Expression) {
         evaluate(stmt.expression)
+    }
+
+    override fun visitFunctionStmt(stmt: Function): Void? {
+        val function = LoxFunction(stmt)
+        environment.define(stmt.name.lexeme, function)
+        return null
     }
 
     override fun visitIfStmt(stmt: If) {
