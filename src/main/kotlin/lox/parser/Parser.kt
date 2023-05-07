@@ -1,6 +1,7 @@
 package lox.parser
 
 import lox.*
+import lox.Function
 import lox.scanner.Token
 import lox.scanner.TokenType
 import lox.scanner.TokenType.*
@@ -23,6 +24,7 @@ class Parser(private val tokens: List<Token>) {
 
     private fun declaration(): Stmt? {
         return try {
+            if (match(FUN)) return function("function")
             if (match(VAR)) varDeclaration() else statement()
         } catch (error: ParseError) {
             synchronize()
@@ -41,8 +43,7 @@ class Parser(private val tokens: List<Token>) {
 
     private fun forStatement(): Stmt {
         consume(LEFT_PAREN, "Expect '(' after 'for'.")
-        val initializer: Stmt?
-        initializer = if (match(SEMICOLON)) {
+        val initializer: Stmt? = if (match(SEMICOLON)) {
             null
         } else if (match(VAR)) {
             varDeclaration()
@@ -123,6 +124,28 @@ class Parser(private val tokens: List<Token>) {
         val expr = expression()
         consume(SEMICOLON, "Expect ';' after expression.")
         return Expression(expr)
+    }
+
+    private fun function(kind: String): Function {
+        val name = consume(IDENTIFIER, "Expect $kind name.")
+        consume(LEFT_PAREN, "Expect '(' after $kind name.")
+
+        val parameters: MutableList<Token> = ArrayList()
+
+        if (!check(RIGHT_PAREN)) {
+            do {
+                if (parameters.size >= 255) {
+                    error(peek(), "Can't have more than 255 parameters.")
+                }
+
+                parameters.add(consume(IDENTIFIER, "Expect parameter name."))
+
+            } while (match(COMMA))
+        }
+        consume(RIGHT_PAREN, "Expect ')' after parameters.")
+        consume(LEFT_BRACE, "Expect '{' before $kind body.")
+        val body = block()
+        return Function(name, parameters, body)
     }
 
     private fun block(): List<Stmt?> {
