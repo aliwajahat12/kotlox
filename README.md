@@ -181,5 +181,42 @@ closure). Our Interpreter can now run the following code:
     counter(); // "1".
     counter(); // "2".
 
+### Chapter 11: Resolving and Binding
 
+This chapter makes a resolver class to resolve all the variables and their environments before actually starting to
+interpret them. This solves the following issues:
+
+#### Issue 1:
+
+When the same function is called twice but before the 2nd calling, var a was declared locally with changed value, the
+function `showA()` would return local value. With the resolving, the function now return same (global) value
+
+    var a = "global";
+    {
+    fun showA() {
+    print a;
+    }
+    
+    showA();
+    var a = "block";
+    showA();
+    }
+
+#### Issue 2:
+
+When re-declaring a function, the user should get an error instead of overriding the value
+
+    fun bad() {
+    var a = "first";
+    var a = "second";
+    }
+
+#### Issue 3:
+
+If the user tries to return from the top level where there is no function from where to return to, user should get an
+error.
+
+    return "at top level";
+
+We resolve before starting to interpret and if we get any error, we stop after resolving.
 
