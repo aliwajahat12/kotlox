@@ -10,6 +10,7 @@ import lox.parser.Visitor as ExprVisitor
 class Interpreter : ExprVisitor<Any?>, StmtVisitor<Any?> {
     private val globals = Environment()
     private var environment = globals
+    private val locals: HashMap<Expr, Int> = HashMap()
 
 
     init {
@@ -40,6 +41,10 @@ class Interpreter : ExprVisitor<Any?>, StmtVisitor<Any?> {
 
     private fun execute(stmt: Stmt) {
         stmt.accept(this)
+    }
+
+    fun resolve(expr: Expr, depth: Int) {
+        locals[expr] = depth
     }
 
     override fun visitBlockStmt(stmt: Block): Void? {
@@ -182,7 +187,16 @@ class Interpreter : ExprVisitor<Any?>, StmtVisitor<Any?> {
     }
 
     override fun visitVariableExpr(expr: Variable): Any? {
-        return environment[expr.name]
+        return lookUpVariable(expr.name, expr)
+    }
+
+    private fun lookUpVariable(name: Token, expr: Expr): Any? {
+        val distance = locals[expr]
+        return if (distance != null) {
+            environment.getAt(distance, name.lexeme)
+        } else {
+            globals[name]
+        }
     }
 
     private fun evaluate(expr: Expr): Any? {
@@ -272,7 +286,13 @@ class Interpreter : ExprVisitor<Any?>, StmtVisitor<Any?> {
 
     override fun visitAssignExpr(expr: Assign): Any? {
         val value = evaluate(expr.value)
-        environment.assign(expr.name, value)
+
+        val distance = locals[expr]
+        if (distance != null) {
+            environment.assignAt(distance, expr.name, value)
+        } else {
+            globals.assign(expr.name, value)
+        }
         return value
     }
 }
