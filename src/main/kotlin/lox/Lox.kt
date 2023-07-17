@@ -1,3 +1,4 @@
+import lox.Resolver
 import lox.RuntimeError
 import lox.parser.Parser
 import lox.scanner.Scanner
@@ -62,6 +63,11 @@ fun run(source: String) {
 
     val parser = Parser(tokens)
     val statements = parser.parse()
+
+    if (hadError) return
+
+    val resolver = Resolver(interpreter)
+    resolver.resolve(statements)
 
     if (hadError) return
 

@@ -12,12 +12,20 @@ import lox.parser.Visitor as ExprVisitor
 internal class Resolver(interpreter: Interpreter) : ExprVisitor<Void?>, StmtVisitor<Void?> {
     private val interpreter: Interpreter
     private val scopes = Stack<MutableMap<String, Boolean>>()
+    private var currentFunction: FunctionType = FunctionType.NONE
 
     init {
         this.interpreter = interpreter
     }
 
-    private fun resolve(statements: List<Stmt?>) {
+
+    private enum class FunctionType {
+        NONE,
+        FUNCTION
+    }
+
+
+    fun resolve(statements: List<Stmt?>) {
         for (statement in statements) {
             resolve(statement!!)
         }
@@ -34,6 +42,12 @@ internal class Resolver(interpreter: Interpreter) : ExprVisitor<Void?>, StmtVisi
     private fun declare(name: Token) {
         if (scopes.isEmpty()) return
         val scope: MutableMap<String, Boolean> = scopes.peek()
+        if (scope.containsKey(name.lexeme)) {
+            loxError(
+                name,
+                "Already a variable with this name in this scope."
+            )
+        }
         scope[name.lexeme] = false
     }
 
@@ -66,7 +80,7 @@ internal class Resolver(interpreter: Interpreter) : ExprVisitor<Void?>, StmtVisi
     override fun visitFunctionStmt(stmt: Function): Void? {
         declare(stmt.name)
         define(stmt.name)
-        resolveFunction(stmt)
+        resolveFunction(stmt, FunctionType.FUNCTION)
         return null
     }
 
@@ -83,6 +97,9 @@ internal class Resolver(interpreter: Interpreter) : ExprVisitor<Void?>, StmtVisi
     }
 
     override fun visitReturnStmt(stmt: Return): Void? {
+        if (currentFunction == FunctionType.NONE) {
+            loxError(stmt.keyword, "Can't return from top-level code.")
+        }
         if (stmt.value != null) {
             resolve(stmt.value)
         }
@@ -166,7 +183,9 @@ internal class Resolver(interpreter: Interpreter) : ExprVisitor<Void?>, StmtVisi
         expr.accept(this)
     }
 
-    private fun resolveFunction(function: Function) {
+    private fun resolveFunction(function: Function, type: FunctionType) {
+        val enclosingFunction: FunctionType = currentFunction
+        currentFunction = type
         beginScope()
         for (param in function.params) {
             declare(param)
@@ -174,5 +193,6 @@ internal class Resolver(interpreter: Interpreter) : ExprVisitor<Void?>, StmtVisi
         }
         resolve(function.body)
         endScope()
+        currentFunction = enclosingFunction
     }
 }
